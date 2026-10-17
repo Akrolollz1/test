@@ -1,8 +1,13 @@
 import math as m
+import json
 import random as r
+import sys
 import turtle as t
+import tkinter as tk
 import tkinter.font as tkf
+from pathlib import Path
 
+WINDOW_SIZE = 800
 SC = 21
 OY = 20
 DURATION = 10
@@ -13,23 +18,55 @@ GAP = 7
 SIZES = (9, 10, 11, 12)
 FONT = "Arial"
 BG = "#060208"
+PALETTE = {
+    "wine": (0.58, 0.0, 0.09),
+    "crimson": (0.90, 0.05, 0.14),
+    "blood": (0.98, 0.10, 0.16),
+}
 
 s = t.Screen()
-s.setup(800, 800)
+s.setup(WINDOW_SIZE, WINDOW_SIZE)
 s.bgcolor(BG)
-s.title("Love Heart")
+s.title("Love Heart - Space: pause | R: restart | Esc: exit")
 s.tracer(0)
 
 cv = s.getcanvas()
 rng = r.Random(11)
 
-PHRASES = [
+DEFAULT_PHRASES = [
     "I love you", "Seni seviyorum", "Te amo", "Je t'aime",
     "Ich liebe dich", "Ti amo", "Eu te amo", "Я тебя люблю",
     "사랑해", "愛してる", "我爱你", "मैं तुमसे प्यार करता हूँ",
     "Σ' αγαπώ", "Ik hou van jou", "Jag älskar dig", "Kocham cię",
     "ฉันรักเธอ", "Anh yêu em", "Aku cinta kamu", "Я тебе кохаю",
 ]
+
+
+def load_phrases():
+    path = Path(__file__).with_name("phrases.json")
+    try:
+        with path.open(encoding="utf-8") as file:
+            phrases = json.load(file)
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Не удалось загрузить {path.name}: {error}. "
+              "Используется встроенный список.", file=sys.stderr)
+        return DEFAULT_PHRASES[:]
+
+    if not isinstance(phrases, list):
+        print(f"{path.name} должен содержать JSON-массив строк. "
+              "Используется встроенный список.", file=sys.stderr)
+        return DEFAULT_PHRASES[:]
+
+    valid = [phrase.strip() for phrase in phrases
+             if isinstance(phrase, str) and phrase.strip()]
+    if not valid:
+        print(f"{path.name} не содержит фраз. "
+              "Используется встроенный список.", file=sys.stderr)
+        return DEFAULT_PHRASES[:]
+    return valid
+
+
+PHRASES = load_phrases()
 
 _fonts = {}
 
@@ -147,9 +184,9 @@ def build():
 
         y -= row_h
 
-    wine = (0.58, 0.0, 0.09)
-    crimson = (0.90, 0.05, 0.14)
-    blood = (0.98, 0.10, 0.16)
+    wine = PALETTE["wine"]
+    crimson = PALETTE["crimson"]
+    blood = PALETTE["blood"]
     for p in placed:
         rad = min(1.0, math_dist(p["x"], p["y"]))
         base = mix(wine, crimson, 0.25 + 0.75 * rad)
@@ -171,7 +208,9 @@ def math_dist(x, y):
 FLASH = (1.0, 0.78, 0.78)
 main_ids = []
 active = []
-tick_no = 0
+after_id = None
+shimmer_id = None
+paused = False
 
 
 def clamp(v):
@@ -234,7 +273,9 @@ spawning = True
 
 
 def step():
-    global spawning, acc
+    global spawning, acc, after_id
+    if paused:
+        return
     if spawning:
         acc += RATE
         try:
@@ -249,26 +290,69 @@ def step():
     if not spawning and not active:
         shimmer()
         return
-    cv.after(TICK, step)
+    after_id = cv.after(TICK, step)
 
 
 def _safe(i, c):
     try:
         cv.itemconfig(i, fill=hx(c))
-    except Exception:
-        pass
+    except tk.TclError:
+        return
 
 
 def shimmer():
+    global shimmer_id
+    if not main_ids:
+        return
     for _ in range(1):
         i, c = rng.choice(main_ids)
         _safe(i, mix(c, FLASH, 0.6))
         cv.after(260, lambda i=i, c=c: _safe(i, c))
-    cv.after(140, shimmer)
+    shimmer_id = cv.after(140, shimmer)
+
+
+def reset_animation():
+    global ORDER, items, RATE, acc, spawning, after_id, shimmer_id
+    global paused
+    if after_id is not None:
+        cv.after_cancel(after_id)
+        after_id = None
+    if shimmer_id is not None:
+        cv.after_cancel(shimmer_id)
+        shimmer_id = None
+    cv.delete("all")
+    main_ids.clear()
+    active.clear()
+    ORDER = build()
+    items = iter(ORDER)
+    RATE = len(ORDER) / (DURATION * 1000 / TICK)
+    acc = 0.0
+    spawning = True
+    paused = False
+
+
+def toggle_pause(_event=None):
+    global paused
+    paused = not paused
+    if not paused:
+        step()
+
+
+def restart(_event=None):
+    reset_animation()
+    step()
+
+
+def quit_app(_event=None):
+    s.bye()
 
 
 try:
-    cv.after(200, step)
+    cv.bind("<space>", toggle_pause)
+    cv.bind("<r>", restart)
+    cv.bind("<R>", restart)
+    cv.bind("<Escape>", quit_app)
+    after_id = cv.after(200, step)
     t.done()
-except (t.Terminator, Exception):
+except t.Terminator:
     pass
