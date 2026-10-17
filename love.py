@@ -286,6 +286,7 @@ def step():
             spawning = False
 
     active[:] = [p for p in active if animate(p)]
+    s.update()
 
     if not spawning and not active:
         shimmer()
