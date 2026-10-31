@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>КР № 1 — Вариант 4</title>
+<script>
+// Сумма квадратов: прибавляем квадрат каждого числа.
+function squaresIterative(n) {
+  var s = 0;
+  for (var i = 1; i <= n; i++) s = s + i * i;
+  return s;
+}
+
+// S(n) = S(n-1) + n²; база S(0)=0.
+function squaresRecursive(n) {
+  if (n == 0) return 0;
+  return squaresRecursive(n - 1) + n * n;
+}
+
+// Палиндром: сравниваем символы записи числа с двух концов.
+function palindromeIterative(text) {
+  var left = 0, right = text.length - 1;
+  while (left < right) {
+    if (text.charAt(left) != text.charAt(right)) return false;
+    left++;
+    right--;
+  }
+  return true;
+}
+
+// База — указатели встретились; иначе проверяем края и внутреннюю часть.
+function palindromeRecursive(text, left, right) {
+  if (left >= right) return true;
+  if (text.charAt(left) != text.charAt(right)) return false;
+  return palindromeRecursive(text, left + 1, right - 1);
+}
+
+// Проверка числа: пустое поле, неверная запись, дробь вместо целого и диапазон.
+function readNumber(form, name, integer, min, max) {
+  var text = form.elements[name].value.trim();
+  if (text == "") throw new Error("Заполните поле «" + name + "».");
+  var value = Number(text);
+  if (isNaN(value) || !isFinite(value)) throw new Error("В поле «" + name + "» нужно ввести число.");
+  if (integer && value % 1 != 0) throw new Error("В поле «" + name + "» нужно ввести целое число.");
+  if (value < min) throw new Error("В поле «" + name + "» введите число не меньше " + min + ".");
+  if (value > max) throw new Error("В поле «" + name + "» введите число не больше " + max + ".");
+  // За этим пределом тип Number не гарантирует точное хранение целых чисел.
+  if (integer && Math.abs(value) > 9007199254740991) throw new Error("Это целое число слишком велико для точного хранения в JavaScript.");
+  return value;
+}
+
+// Сброс удаляет оба результата, текстовый вывод и сообщение сравнения.
+function clearResult(form) {
+  form.elements.iterative.value = "";
+  form.elements.recursive.value = "";
+  form.querySelector(".result").textContent = "";
+  form.querySelector(".comparison").textContent = "";
+}
+
+// Выводим оба способа в поля формы и повторяем текстом. Сравниваем исходные значения.
+function showResult(form, iterative, recursive, exactInteger) {
+  if (typeof iterative == "number" && (!isFinite(iterative) || !isFinite(recursive))) {
+    throw new Error("Результат слишком велик для числового типа JavaScript. Уменьшите исходные данные.");
+  }
+  if (exactInteger && (Math.abs(iterative) > 9007199254740991 || Math.abs(recursive) > 9007199254740991)) {
+    throw new Error("Результат выходит за пределы точных целых чисел JavaScript. Уменьшите исходные данные.");
+  }
+  var same = iterative === recursive;
+  if (typeof iterative == "boolean") {
+    iterative = iterative ? "да" : "нет";
+    recursive = recursive ? "да" : "нет";
+  }
+  form.elements.iterative.value = iterative;
+  form.elements.recursive.value = recursive;
+  form.querySelector(".result").textContent = "Цикл: " + iterative + ". Рекурсия: " + recursive + ".";
+  var message = "Результаты совпали.";
+  if (!same) {
+    if (typeof iterative == "number" && Math.abs(iterative - recursive) <= 1e-12 * Math.max(1, Math.abs(iterative), Math.abs(recursive))) {
+      message = "Результаты не совпали точно: различие в пределах погрешности вычислений с дробными числами.";
+    } else {
+      message = "Результаты не совпали: это не объясняется малой погрешностью, нужно проверить реализации алгоритмов.";
+    }
+  }
+  form.querySelector(".comparison").textContent = message;
+}
+
+// Задание 1: проверяем ввод, вычисляем обоими способами и сравниваем.
+// Сначала рекурсия: при превышении глубины вызовов длинный цикл не запускается.
+function calculate1(form) {
+  clearResult(form);
+  try {
+    var n, a, b, x, text, digit, iterative, recursive;
+    var exactInteger = true;
+    n = readNumber(form, "n", true, 1, Infinity);
+    recursive = squaresRecursive(n); iterative = squaresIterative(n);
+    showResult(form, iterative, recursive, exactInteger);
+  } catch (error) {
+    clearResult(form);
+    form.querySelector(".comparison").textContent = error instanceof RangeError
+      ? "Превышена допустимая глубина рекурсии в браузере. Уменьшите число или длину текста."
+      : error.message;
+  }
+}
+
+// Задание 2: проверяем ввод, вычисляем обоими способами и сравниваем.
+// Сначала рекурсия: при превышении глубины вызовов длинный цикл не запускается.
+function calculate2(form) {
+  clearResult(form);
+  try {
+    var n, a, b, x, text, digit, iterative, recursive;
+    var exactInteger = true;
+    n = readNumber(form, "N", true, -Infinity, Infinity);
+    text = String(n);
+    recursive = palindromeRecursive(text, 0, text.length - 1);
+    iterative = palindromeIterative(text); exactInteger = false;
+    showResult(form, iterative, recursive, exactInteger);
+  } catch (error) {
+    clearResult(form);
+    form.querySelector(".comparison").textContent = error instanceof RangeError
+      ? "Превышена допустимая глубина рекурсии в браузере. Уменьшите число или длину текста."
+      : error.message;
+  }
+}
+
+</script>
+</head>
+<body>
+<h1>Контрольная работа № 1. Вариант 4</h1>
+<form onsubmit="calculate1(this); return false;" onreset="clearResult(this)" oninput="clearResult(this)">
+  <h2>Задание 1. Сумма квадратов первых n чисел</h2>
+  <p><label>n — целое, n ≥ 1: <input type="text" name="n" size="16"></label></p>
+  <button type="submit">Вычислить</button>
+  <button type="reset">Сбросить</button>
+  <p><label>Цикл: <input name="iterative" readonly size="45"></label></p>
+  <p><label>Рекурсия: <input name="recursive" readonly size="45"></label></p>
+  <p class="result" aria-live="polite"></p>
+  <p class="comparison" aria-live="polite"></p>
+</form>
+<form onsubmit="calculate2(this); return false;" onreset="clearResult(this)" oninput="clearResult(this)">
+  <h2>Задание 2. Проверка числа на палиндром</h2>
+  <p>Знак минус учитывается в записи числа.</p>
+  <p><label>N — целое число: <input type="text" name="N" size="16"></label></p>
+  <button type="submit">Вычислить</button>
+  <button type="reset">Сбросить</button>
+  <p><label>Цикл: <input name="iterative" readonly size="45"></label></p>
+  <p><label>Рекурсия: <input name="recursive" readonly size="45"></label></p>
+  <p class="result" aria-live="polite"></p>
+  <p class="comparison" aria-live="polite"></p>
+</form>
+</body>
+</html>

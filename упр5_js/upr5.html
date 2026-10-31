@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Упражнение 5. Оператор выбора</title>
+</head>
+<body>
+    <h1>Оператор выбора switch</h1>
+
+    <h2>Задание 1. Время года по номеру месяца</h2>
+    <label>
+        Номер месяца:
+        <input id="month" type="number" min="1" max="12">
+    </label>
+    <button onclick="showSeason()">Определить</button>
+    <p id="seasonResult"></p>
+
+    <h2>Задание 2. Описание оценки</h2>
+    <label>
+        Оценка K:
+        <input id="mark" type="number" min="1" max="5">
+    </label>
+    <button onclick="showMark()">Показать</button>
+    <p id="markResult"></p>
+
+    <h2>Задание 3. Калькулятор разложения в ряд</h2>
+    <label>
+        Функция:
+        <select id="functionType">
+            <option value="1">Экспонента e^x</option>
+            <option value="2">Синус sin(x)</option>
+            <option value="3">Косинус cos(x)</option>
+            <option value="4">Логарифм ln(1+x)</option>
+            <option value="5">Арктангенс arctg(x)</option>
+        </select>
+    </label>
+    <br>
+    <label>
+        x:
+        <input id="x" type="number" step="any" value="1">
+    </label>
+    <br>
+    <label>
+        Точность:
+        <input id="accuracy" type="number" step="any" min="0.000001" value="0.000001">
+    </label>
+    <br>
+    <button onclick="calculate()">Вычислить</button>
+    <p id="seriesResult"></p>
+
+    <script>
+        const name = prompt("Введите ваше имя:");
+
+        function showSeason() {
+            const month = Number(document.getElementById("month").value);
+            let season;
+
+            switch (month) {
+                case 12:
+                case 1:
+                case 2:
+                    season = "зима";
+                    break;
+                case 3:
+                case 4:
+                case 5:
+                    season = "весна";
+                    break;
+                case 6:
+                case 7:
+                case 8:
+                    season = "лето";
+                    break;
+                case 9:
+                case 10:
+                case 11:
+                    season = "осень";
+                    break;
+                default:
+                    season = "ошибка: введите число от 1 до 12";
+            }
+
+            document.getElementById("seasonResult").textContent =
+                name ? name + ", время года: " + season : "Время года: " + season;
+        }
+
+        function showMark() {
+            const mark = Number(document.getElementById("mark").value);
+            let text;
+
+            switch (mark) {
+                case 1:
+                    text = "плохо";
+                    break;
+                case 2:
+                    text = "неудовлетворительно";
+                    break;
+                case 3:
+                    text = "удовлетворительно";
+                    break;
+                case 4:
+                    text = "хорошо";
+                    break;
+                case 5:
+                    text = "отлично";
+                    break;
+                default:
+                    text = "ошибка";
+            }
+
+            document.getElementById("markResult").textContent = text;
+        }
+
+        function calculate() {
+            const type = Number(document.getElementById("functionType").value);
+            const x = Number(document.getElementById("x").value);
+            const accuracy = Number(document.getElementById("accuracy").value);
+            let sum;
+            let term;
+            let n = 0;
+
+            switch (type) {
+                case 1:
+                    sum = 1;
+                    term = 1;
+                    while (Math.abs(term) > accuracy) {
+                        n++;
+                        term *= x / n;
+                        sum += term;
+                    }
+                    break;
+                case 2:
+                    sum = 0;
+                    term = x;
+                    n = 0;
+                    while (Math.abs(term) > accuracy) {
+                        sum += term;
+                        n++;
+                        term *= -x * x / ((2 * n) * (2 * n + 1));
+                    }
+                    break;
+                case 3:
+                    sum = 1;
+                    term = 1;
+                    n = 0;
+                    while (Math.abs(term) > accuracy) {
+                        n++;
+                        term *= -x * x / ((2 * n - 1) * (2 * n));
+                        sum += term;
+                    }
+                    break;
+                case 4:
+                    if (x <= -1 || x > 1) {
+                        document.getElementById("seriesResult").textContent =
+                            "Для ln(1+x) нужно -1 < x <= 1";
+                        return;
+                    }
+                    sum = 0;
+                    term = x;
+                    n = 1;
+                    while (Math.abs(term) > accuracy) {
+                        sum += term;
+                        n++;
+                        term = Math.pow(-1, n + 1) * Math.pow(x, n) / n;
+                    }
+                    break;
+                case 5:
+                    sum = 0;
+                    term = x;
+                    n = 0;
+                    while (Math.abs(term) > accuracy) {
+                        sum += term;
+                        n++;
+                        term *= -x * x * (2 * n - 1) / (2 * n + 1);
+                    }
+                    break;
+                default:
+                    document.getElementById("seriesResult").textContent = "Ошибка выбора функции";
+                    return;
+            }
+
+            let exact;
+            switch (type) {
+                case 1:
+                    exact = Math.exp(x);
+                    break;
+                case 2:
+                    exact = Math.sin(x);
+                    break;
+                case 3:
+                    exact = Math.cos(x);
+                    break;
+                case 4:
+                    exact = Math.log(1 + x);
+                    break;
+                case 5:
+                    exact = Math.atan(x);
+                    break;
+            }
+
+            document.getElementById("seriesResult").textContent =
+                "Ряд: " + sum + "; Math: " + exact;
+        }
+    </script>
+</body>
+</html>

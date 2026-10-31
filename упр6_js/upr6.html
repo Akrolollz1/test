@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Упражнение 6. Массивы</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 25px; }
+    section { margin-bottom: 30px; }
+    input { width: 90px; margin: 4px; }
+    button { margin: 5px 5px 5px 0; padding: 7px 10px; }
+    table { border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #888; padding: 5px 10px; }
+    canvas { border: 1px solid #888; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Упражнение 6. Массивы</h1>
+
+  <section>
+    <h2>Задания 1–2. Ряд Фибоначчи</h2>
+    <label>n: <input id="n" type="number" min="1" max="50"></label>
+    <button onclick="fibonacci()">Показать ряд</button>
+    <button onclick="showSum()">Показать сумму</button>
+    <p id="fibResult"></p>
+    <p id="sumResult"></p>
+  </section>
+
+  <section>
+    <h2>Задание 3. Таблица кусочной функции</h2>
+    <p>f(x) = -x, если x &lt;= 0; x², если 0 &lt; x &lt; 2; 2x, если x &gt;= 2</p>
+    <label>A: <input id="a" type="number" step="any"></label>
+    <label>B: <input id="b" type="number" step="any"></label>
+    <label>C: <input id="c" type="number" step="any"></label>
+    <button onclick="makeTable()">Построить таблицу</button>
+    <div id="tableResult"></div>
+    <canvas id="graph" width="600" height="300"></canvas>
+  </section>
+
+  <section>
+    <h2>Дополнительное задание. Секунды с начала суток</h2>
+    <label>N: <input id="seconds" type="number" min="0" max="86399"></label>
+    <button onclick="showTime()">Рассчитать</button>
+    <p id="timeResult"></p>
+  </section>
+
+  <script>
+    var fibonacciNumbers = [];
+
+    function fibonacci() {
+      var n = Number(document.getElementById('n').value);
+      var result = document.getElementById('fibResult');
+      var sum = document.getElementById('sumResult');
+
+      if (!Number.isInteger(n) || n < 1 || n > 50) {
+        result.textContent = 'Введите натуральное n от 1 до 50.';
+        sum.textContent = '';
+        return;
+      }
+
+      fibonacciNumbers = [1];
+      if (n > 1) fibonacciNumbers.push(1);
+      for (var i = 2; i < n; i++) {
+        fibonacciNumbers.push(fibonacciNumbers[i - 1] + fibonacciNumbers[i - 2]);
+      }
+
+      result.textContent = 'Ряд: ' + fibonacciNumbers.join(', ');
+      sum.textContent = '';
+    }
+
+    function showSum() {
+      if (fibonacciNumbers.length === 0) {
+        document.getElementById('sumResult').textContent = 'Сначала постройте ряд.';
+        return;
+      }
+
+      var sum = 0;
+      for (var i = 0; i < fibonacciNumbers.length; i++) {
+        sum += fibonacciNumbers[i];
+      }
+      document.getElementById('sumResult').textContent = 'Сумма: ' + sum;
+    }
+
+    function value(x) {
+      if (x <= 0) return -x;
+      if (x < 2) return x * x;
+      return 2 * x;
+    }
+
+    function makeTable() {
+      var a = Number(document.getElementById('a').value);
+      var b = Number(document.getElementById('b').value);
+      var c = Number(document.getElementById('c').value);
+      var output = document.getElementById('tableResult');
+
+      if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c) ||
+          c <= 0 || a > b) {
+        output.textContent = 'Проверьте: A <= B, а шаг C должен быть больше 0.';
+        return;
+      }
+
+      var html = '<table><tr><th>x</th><th>f(x)</th></tr>';
+      var points = [];
+      for (var x = a; x <= b + c / 1000; x += c) {
+        var currentX = Number(x.toFixed(10));
+        html += '<tr><td>' + currentX + '</td><td>' + value(currentX) + '</td></tr>';
+        points.push([currentX, value(currentX)]);
+      }
+      html += '</table>';
+      output.innerHTML = html;
+      drawGraph(points);
+    }
+
+    function drawGraph(points) {
+      var canvas = document.getElementById('graph');
+      var context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      if (points.length < 1) return;
+
+      var minX = points[0][0];
+      var maxX = points[points.length - 1][0];
+      var ys = points.map(function(point) { return point[1]; });
+      var minY = Math.min.apply(null, ys);
+      var maxY = Math.max.apply(null, ys);
+      if (minX === maxX) maxX = minX + 1;
+      if (minY === maxY) maxY = minY + 1;
+
+      function px(x) { return 30 + (x - minX) * 540 / (maxX - minX); }
+      function py(y) { return 270 - (y - minY) * 240 / (maxY - minY); }
+
+      context.beginPath();
+      for (var i = 0; i < points.length; i++) {
+        if (i === 0) context.moveTo(px(points[i][0]), py(points[i][1]));
+        else context.lineTo(px(points[i][0]), py(points[i][1]));
+      }
+      context.strokeStyle = 'blue';
+      context.stroke();
+    }
+
+    function showTime() {
+      var n = Number(document.getElementById('seconds').value);
+      var output = document.getElementById('timeResult');
+
+      if (!Number.isInteger(n) || n < 0 || n >= 86400) {
+        output.textContent = 'Введите целое N от 0 до 86399.';
+        return;
+      }
+
+      var hours = Math.floor(n / 3600);
+      var minutes = Math.floor(n / 60);
+      var secondsInMinute = n % 60;
+      var secondsInHour = n % 3600;
+      var minutesInHour = Math.floor(secondsInHour / 60);
+      var hour12 = hours % 12 || 12;
+
+      output.innerHTML =
+        'Полных минут: ' + minutes + '<br>' +
+        'Полных часов: ' + hours + '<br>' +
+        'Секунд с начала последней минуты: ' + secondsInMinute + '<br>' +
+        'Секунд с начала последнего часа: ' + secondsInHour + '<br>' +
+        'Минут с начала последнего часа: ' + minutesInHour + '<br>' +
+        '12-часовой формат: ' + hour12 + ':' +
+          String(minutes % 60).padStart(2, '0') + ':' +
+          String(secondsInMinute).padStart(2, '0') + '<br>' +
+        '24-часовой формат: ' + String(hours).padStart(2, '0') + ':' +
+          String(minutes % 60).padStart(2, '0') + ':' +
+          String(secondsInMinute).padStart(2, '0');
+    }
+  </script>
+</body>
+</html>
